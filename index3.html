@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz: Infinite Geometric Series</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#eef3fa;
+}
+.container{
+    max-width:900px;
+    margin:40px auto;
+    background:white;
+    padding:30px;
+    border-radius:16px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12);
+}
+h1,h2,h3{text-align:center}
+input{
+    width:100%;
+    padding:14px;
+    margin:10px 0;
+    font-size:16px;
+}
+button{
+    padding:14px 24px;
+    font-size:16px;
+    border:none;
+    border-radius:10px;
+    background:#2d6cdf;
+    color:white;
+    cursor:pointer;
+}
+button:disabled{
+    background:gray;
+    cursor:not-allowed;
+}
+#examPage{display:none}
+.question-box{
+    margin-top:30px;
+    min-height:180px;
+    font-size:24px;
+    text-align:center;
+    padding:20px;
+    border:2px solid #ddd;
+    border-radius:12px;
+}
+.terminated{
+    text-align:center;
+    margin-top:100px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<div id="loginPage">
+    <h1>Quiz: Infinite Geometric Series</h1>
+    <h3>Determine whether the following infinite geometric series converges or diverges.</h3>
+
+    <input id="name" placeholder="Full Name">
+    <input id="number" placeholder="Student Number">
+
+    <button onclick="startExam()">Start Exam</button>
+</div>
+
+<div id="examPage">
+    <h2>Exam</h2>
+
+    <p><b>Name:</b> <span id="studentName"></span></p>
+    <p><b>Student Number:</b> <span id="studentNumber"></span></p>
+    <p><b>Questions Generated:</b> <span id="count">0</span>/5</p>
+
+    <div id="questionBox" class="question-box">
+        Press the button to generate a question
+    </div>
+
+    <br>
+    <button id="randomBtn" onclick="generateQuestion()">Generate Question</button>
+</div>
+
+</div>
+
+<script>
+let count = 0;
+let examStarted = false;
+let usedQuestions = [];
+
+function terminateExam(msg){
+    document.body.innerHTML = `
+        <div class="terminated">
+            <h1 style="color:red;">Exam Terminated</h1>
+            <p>${msg}</p>
+        </div>
+    `;
+}
+
+function startExam(){
+    const name = document.getElementById("name").value.trim();
+    const number = document.getElementById("number").value.trim();
+
+    if(!name || !number){
+        alert("Please fill in all fields.");
+        return;
+    }
+
+    examStarted = true;
+
+    document.getElementById("studentName").innerText = name;
+    document.getElementById("studentNumber").innerText = number;
+
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("examPage").style.display="block";
+}
+
+document.addEventListener("visibilitychange", function(){
+    if(examStarted && document.hidden){
+        terminateExam("Tab switching detected.");
+    }
+});
+
+document.addEventListener("keydown", function(e){
+    if(!examStarted) return;
+
+    if(e.key==="F5" || (e.ctrlKey && e.key.toLowerCase()==="r")){
+        e.preventDefault();
+        terminateExam("Refresh detected.");
+    }
+});
+
+history.pushState(null,null,location.href);
+window.onpopstate = function(){
+    terminateExam("Back button detected.");
+};
+
+const termBank = [`\\[1+\\frac12+\\frac14+\\frac18+\\cdots\\]`,
+`\\[2+1+\\frac12+\\frac14+\\cdots\\]`,
+`\\[3+\\frac32+\\frac34+\\frac38+\\cdots\\]`,
+`\\[4+2+1+\\frac12+\\cdots\\]`,
+`\\[5+\\frac52+\\frac54+\\frac58+\\cdots\\]`,
+
+`\\[1-\\frac12+\\frac14-\\frac18+\\cdots\\]`,
+`\\[2-1+\\frac12-\\frac14+\\cdots\\]`,
+`\\[3-\\frac32+\\frac34-\\frac38+\\cdots\\]`,
+`\\[4-2+1-\\frac12+\\cdots\\]`,
+`\\[5-\\frac52+\\frac54-\\frac58+\\cdots\\]`,
+
+`\\[1+2+4+8+\\cdots\\]`,
+`\\[2+4+8+16+\\cdots\\]`,
+`\\[3+6+12+24+\\cdots\\]`,
+`\\[4+8+16+32+\\cdots\\]`,
+`\\[5+10+20+40+\\cdots\\]`,
+
+`\\[1-2+4-8+\\cdots\\]`,
+`\\[2-4+8-16+\\cdots\\]`,
+`\\[3-6+12-24+\\cdots\\]`,
+`\\[4-8+16-32+\\cdots\\]`,
+`\\[5-10+20-40+\\cdots\\]`,
+
+`\\[1+\\frac23+\\frac49+\\frac8{27}+\\cdots\\]`,
+`\\[2+\\frac43+\\frac89+\\frac{16}{27}+\\cdots\\]`,
+`\\[3+2+\\frac43+\\frac89+\\cdots\\]`,
+`\\[4+\\frac83+\\frac{16}9+\\frac{32}{27}+\\cdots\\]`,
+`\\[5+\\frac{10}3+\\frac{20}9+\\cdots\\]`,
+
+`\\[1-\\frac23+\\frac49-\\frac8{27}+\\cdots\\]`,
+`\\[2-\\frac43+\\frac89-\\frac{16}{27}+\\cdots\\]`,
+`\\[3-2+\\frac43-\\frac89+\\cdots\\]`,
+`\\[4-\\frac83+\\frac{16}9-\\frac{32}{27}+\\cdots\\]`,
+`\\[5-\\frac{10}3+\\frac{20}9-\\cdots\\]`,
+
+`\\[1+\\frac34+\\frac9{16}+\\frac{27}{64}+\\cdots\\]`,
+`\\[2+\\frac32+\\frac98+\\frac{27}{32}+\\cdots\\]`,
+`\\[3+\\frac94+\\frac{27}{16}+\\cdots\\]`,
+`\\[4+3+\\frac94+\\cdots\\]`,
+`\\[5+\\frac{15}4+\\frac{45}{16}+\\cdots\\]`,
+
+`\\[1-\\frac34+\\frac9{16}-\\frac{27}{64}+\\cdots\\]`,
+`\\[2-\\frac32+\\frac98-\\frac{27}{32}+\\cdots\\]`,
+`\\[3-\\frac94+\\frac{27}{16}-\\cdots\\]`,
+`\\[4-3+\\frac94-\\cdots\\]`,
+`\\[5-\\frac{15}4+\\frac{45}{16}-\\cdots\\]`,
+
+`\\[1+\\frac15+\\frac1{25}+\\frac1{125}+\\cdots\\]`,
+`\\[2+\\frac25+\\frac2{25}+\\cdots\\]`,
+`\\[3+\\frac35+\\frac3{25}+\\cdots\\]`,
+`\\[4+\\frac45+\\frac4{25}+\\cdots\\]`,
+`\\[5+1+\\frac15+\\cdots\\]`,
+
+`\\[1-\\frac15+\\frac1{25}-\\cdots\\]`,
+`\\[2-\\frac25+\\frac2{25}-\\cdots\\]`,
+`\\[3-\\frac35+\\frac3{25}-\\cdots\\]`,
+`\\[4-\\frac45+\\frac4{25}-\\cdots\\]`,
+`\\[5-1+\\frac15-\\cdots\\]`,
+
+`\\[2+6+18+54+\\cdots\\]`,
+`\\[3+9+27+81+\\cdots\\]`,
+`\\[4+12+36+108+\\cdots\\]`,
+`\\[5+15+45+135+\\cdots\\]`,
+`\\[1+3+9+27+\\cdots\\]`,
+
+`\\[2-6+18-54+\\cdots\\]`,
+`\\[3-9+27-81+\\cdots\\]`,
+`\\[4-12+36-108+\\cdots\\]`,
+`\\[5-15+45-135+\\cdots\\]`,
+`\\[1-3+9-27+\\cdots\\]`,
+
+`\\[1+\\frac13+\\frac19+\\frac1{27}+\\cdots\\]`,
+`\\[2+\\frac23+\\frac29+\\cdots\\]`,
+`\\[3+1+\\frac13+\\cdots\\]`,
+`\\[4+\\frac43+\\frac49+\\cdots\\]`,
+`\\[5+\\frac53+\\frac59+\\cdots\\]`,
+
+`\\[1-\\frac13+\\frac19-\\frac1{27}+\\cdots\\]`,
+`\\[2-\\frac23+\\frac29-\\cdots\\]`,
+`\\[3-1+\\frac13-\\cdots\\]`,
+`\\[4-\\frac43+\\frac49-\\cdots\\]`,
+`\\[5-\\frac53+\\frac59-\\cdots\\]`,
+
+`\\[1+\\frac45+\\frac{16}{25}+\\cdots\\]`,
+`\\[2+\\frac85+\\frac{32}{25}+\\cdots\\]`,
+`\\[3+\\frac{12}5+\\frac{48}{25}+\\cdots\\]`,
+`\\[4+\\frac{16}5+\\frac{64}{25}+\\cdots\\]`,
+`\\[5+4+\\frac{16}5+\\cdots\\]`,
+
+`\\[1-\\frac45+\\frac{16}{25}-\\cdots\\]`,
+`\\[2-\\frac85+\\frac{32}{25}-\\cdots\\]`,
+`\\[3-\\frac{12}5+\\frac{48}{25}-\\cdots\\]`,
+`\\[4-\\frac{16}5+\\frac{64}{25}-\\cdots\\]`,
+`\\[5-4+\\frac{16}5-\\cdots\\]`,
+`\\[1+\\frac25+\\frac4{25}+\\frac8{125}+\\cdots\\]`,
+`\\[2+\\frac45+\\frac8{25}+\\cdots\\]`,
+`\\[3+\\frac65+\\frac{12}{25}+\\cdots\\]`,
+`\\[4+\\frac85+\\frac{16}{25}+\\cdots\\]`,
+`\\[5+2+\\frac45+\\cdots\\]`,
+
+`\\[1-\\frac25+\\frac4{25}-\\cdots\\]`,
+`\\[2-\\frac45+\\frac8{25}-\\cdots\\]`,
+`\\[3-\\frac65+\\frac{12}{25}-\\cdots\\]`,
+`\\[4-\\frac85+\\frac{16}{25}-\\cdots\\]`,
+`\\[5-2+\\frac45-\\cdots\\]`,
+
+`\\[1+\\frac14+\\frac1{16}+\\frac1{64}+\\cdots\\]`,
+`\\[2+\\frac12+\\frac18+\\cdots\\]`,
+`\\[3+\\frac34+\\frac3{16}+\\cdots\\]`,
+`\\[4+1+\\frac14+\\cdots\\]`,
+`\\[5+\\frac54+\\frac5{16}+\\cdots\\]`,
+
+`\\[1-\\frac14+\\frac1{16}-\\cdots\\]`,
+`\\[2-\\frac12+\\frac18-\\cdots\\]`,
+`\\[3-\\frac34+\\frac3{16}-\\cdots\\]`,
+`\\[4-1+\\frac14-\\cdots\\]`,
+`\\[5-\\frac54+\\frac5{16}-\\cdots\\]`,
+
+`\\[1+5+25+125+\\cdots\\]`,
+`\\[2+10+50+250+\\cdots\\]`,
+`\\[3+15+75+375+\\cdots\\]`,
+`\\[4+20+100+500+\\cdots\\]`,
+`\\[5+25+125+625+\\cdots\\]`,
+
+`\\[1-5+25-125+\\cdots\\]`,
+`\\[2-10+50-250+\\cdots\\]`,
+`\\[3-15+75-375+\\cdots\\]`,
+`\\[4-20+100-500+\\cdots\\]`,
+`\\[5-25+125-625+\\cdots\\]`,
+
+`\\[2+\\frac43+\\frac89+\\frac{16}{27}+\\cdots\\]`,
+`\\[3+2+\\frac43+\\cdots\\]`,
+`\\[4+\\frac83+\\frac{16}{9}+\\cdots\\]`,
+`\\[5+\\frac{10}{3}+\\frac{20}{9}+\\cdots\\]`,
+`\\[1+\\frac23+\\frac49+\\cdots\\]`,
+
+`\\[2-\\frac43+\\frac89-\\cdots\\]`,
+`\\[3-2+\\frac43-\\cdots\\]`,
+`\\[4-\\frac83+\\frac{16}{9}-\\cdots\\]`,
+`\\[5-\\frac{10}{3}+\\frac{20}{9}-\\cdots\\]`,
+`\\[1-\\frac23+\\frac49-\\cdots\\]`,
+
+`\\[1+\\frac35+\\frac9{25}+\\frac{27}{125}+\\cdots\\]`,
+`\\[2+\\frac65+\\frac{18}{25}+\\cdots\\]`,
+`\\[3+\\frac95+\\frac{27}{25}+\\cdots\\]`,
+`\\[4+\\frac{12}5+\\frac{36}{25}+\\cdots\\]`,
+`\\[5+3+\\frac95+\\cdots\\]`
+];
+
+const generalBank = [
+`\\[\\sum_{n=0}^{\\infty} 1\\left(\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 2\\left(\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 3\\left(\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 4\\left(\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 5\\left(\\frac12\\right)^n\\]`,
+
+`\\[\\sum_{n=0}^{\\infty} 1\\left(-\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 2\\left(-\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 3\\left(-\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 4\\left(-\\frac12\\right)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 5\\left(-\\frac12\\right)^n\\]`,
+
+`\\[\\sum_{n=0}^{\\infty} 1(2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 2(2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 3(2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 4(2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 5(2)^n\\]`,
+
+`\\[\\sum_{n=0}^{\\infty} 1(-2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 2(-2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 3(-2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 4(-2)^n\\]`,
+`\\[\\sum_{n=0}^{\\infty} 5(-2)^n\\]`,
+
+`\\[a_n=1\\left(\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=2\\left(\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=3\\left(\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=4\\left(\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=5\\left(\\frac34\\right)^{n-1}\\]`,`\\[a_n=1\\left(-\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=2\\left(-\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=3\\left(-\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=4\\left(-\\frac34\\right)^{n-1}\\]`,
+`\\[a_n=5\\left(-\\frac34\\right)^{n-1}\\]`,
+
+`\\[a_n=1(3)^{n-1}\\]`,
+`\\[a_n=2(3)^{n-1}\\]`,
+`\\[a_n=3(3)^{n-1}\\]`,
+`\\[a_n=4(3)^{n-1}\\]`,
+`\\[a_n=5(3)^{n-1}\\]`,
+
+`\\[a_n=1(-3)^{n-1}\\]`,
+`\\[a_n=2(-3)^{n-1}\\]`,
+`\\[a_n=3(-3)^{n-1}\\]`,
+`\\[a_n=4(-3)^{n-1}\\]`,
+`\\[a_n=5(-3)^{n-1}\\]`,
+
+`\\[\\sum_{n=1}^{\\infty}2\\left(\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}3\\left(\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}4\\left(\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}5\\left(\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}1\\left(\\frac23\\right)^n\\]`,
+
+`\\[\\sum_{n=1}^{\\infty}2\\left(-\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}3\\left(-\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}4\\left(-\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}5\\left(-\\frac23\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}1\\left(-\\frac23\\right)^n\\]`,
+
+`\\[\\sum_{n=1}^{\\infty}1\\left(\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}2\\left(\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}3\\left(\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}4\\left(\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}5\\left(\\frac14\\right)^n\\]`,
+
+`\\[\\sum_{n=1}^{\\infty}1\\left(-\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}2\\left(-\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}3\\left(-\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}4\\left(-\\frac14\\right)^n\\]`,
+`\\[\\sum_{n=1}^{\\infty}5\\left(-\\frac14\\right)^n\\]`,
+
+`\\[a_n=1\\left(\\frac15\\right)^{n-1}\\]`,
+`\\[a_n=2\\left(\\frac15\\right)^{n-1}\\]`,
+`\\[a_n=3\\left(\\frac15\\right)^{n-1}\\]`,
+`\\[a_n=4\\left(\\frac15\\right)^{n-1}\\]`,
+`\\[a_n=5\\left(\\frac15\\right)^{n-1}\\]`,
+
+`\\[a_n=1(-5)^{n-1}\\]`,
+`\\[a_n=2(-5)^{n-1}\\]`,
+`\\[a_n=3(-5)^{n-1}\\]`,
+`\\[a_n=4(-5)^{n-1}\\]`,
+`\\[a_n=5(-5)^{n-1}\\]`
+];
+
+function generateQuestion(){
+    if(count >= 5) return;
+
+    let pool = (count < 2) ? termBank : generalBank;
+    let question;
+
+    do{
+        question = pool[Math.floor(Math.random()*pool.length)];
+    } while(usedQuestions.includes(question));
+
+    usedQuestions.push(question);
+    count++;
+
+    document.getElementById("count").innerText = count;
+    document.getElementById("questionBox").innerHTML =
+        `Determine whether the following infinite geometric series converges or diverges.<br><br>${question}`;
+
+    if(window.MathJax){
+        MathJax.typesetPromise();
+    }
+
+    if(count >= 5){
+        document.getElementById("randomBtn").disabled = true;
+    }
+}
+</script>
+</body>
+</html>
